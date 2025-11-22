@@ -1,16 +1,22 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from typing import Optional, Dict, List, Any
-from io import BytesIO
-from PyPDF2 import PdfReader
+import logging
 import re
 import warnings
+from io import BytesIO
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+from PyPDF2 import PdfReader
+
+from app.aws_utils import textract_document_text
+from app.settings import settings
 
 # Silence the noisy PyPDF2 cmap warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="PyPDF2._cmap")
 
 medicalrouter = APIRouter()
+logger = logging.getLogger("medical_audit")
 
 # ----------------------- TOOL CONFIG (from spec) -----------------------
 
@@ -189,19 +195,46 @@ REQUIRED_FACE_FIELDS = {
 # ----------------------- PDF TEXT EXTRACTION -----------------------
 
 
-def extract_pdf_text(file_bytes: bytes) -> str:
+def extract_pdf_text_local(file_bytes: bytes, *, page_limit: Optional[int] = None) -> str:
     """
     Local PDF text extraction. If the PDF is image-only (no embedded text),
-    this returns an empty string and we have to use OCR in a future phase.
+    this returns an empty string.
+
+    The `page_limit` allows us to cap work for very large files (useful for
+    serverless environments where execution time is limited).
     """
     reader = PdfReader(BytesIO(file_bytes))
     pages_text: List[str] = []
-    for page in reader.pages:
+    for idx, page in enumerate(reader.pages):
+        if page_limit is not None and idx >= page_limit:
+            break
         try:
             pages_text.append(page.extract_text() or "")
-        except Exception:
+        except Exception as exc:  # pragma: no cover - defensive logging only
+            logger.warning("Failed to extract text from page %s: %s", idx, exc)
             continue
-    return "\n".join(pages_text)
+    return "\n".join(pages_text).strip()
+
+
+def extract_pdf_text(file_bytes: bytes) -> str:
+    """
+    Extract text using PyPDF2 and, if allowed, fall back to AWS Textract
+    for image-only documents. Textract is optional and driven by environment
+    variables so the service can run locally without AWS credentials.
+    """
+    text = extract_pdf_text_local(file_bytes, page_limit=settings.max_pdf_pages)
+
+    if text.strip():
+        return text
+
+    if settings.textract_enabled:
+        textract_text = textract_document_text(file_bytes, region=settings.aws_region)
+        if textract_text:
+            logger.info("Extracted text using Textract fallback")
+        return textract_text
+
+    logger.info("No embedded text found and Textract disabled; returning empty string")
+    return text
 
 
 # ----------------------- FACE SHEET PARSING + AUDIT -----------------------
@@ -470,10 +503,11 @@ async def audit_face_sheet(file: UploadFile = File(...)):
 
     text = extract_pdf_text(file_bytes)
     if not text.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="No embedded text found in PDF. This looks like a scanned image; OCR (Textract/Tesseract) is required.",
+        detail = (
+            "No text could be extracted. Enable MED_AUDIT_TEXTRACT_ENABLED for OCR "
+            "or provide a text-based PDF."
         )
+        raise HTTPException(status_code=400, detail=detail)
 
     facesheet = parse_facesheet_from_text(text)
     return audit_facesheet(facesheet)
@@ -493,10 +527,11 @@ async def audit_wound_note_endpoint(file: UploadFile = File(...)):
 
     text = extract_pdf_text(file_bytes)
     if not text.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="No embedded text found in PDF. This looks like a scanned image; OCR is required for auditing.",
+        detail = (
+            "No text could be extracted. Enable MED_AUDIT_TEXTRACT_ENABLED for OCR "
+            "or provide a text-based PDF."
         )
+        raise HTTPException(status_code=400, detail=detail)
 
     return audit_wound_note(text)
 
@@ -523,7 +558,10 @@ async def audit_auto(file: UploadFile = File(...)) -> Dict[str, Any]:
     if doc_type == "image_only":
         raise HTTPException(
             status_code=400,
-            detail="PDF appears to be image-only (no embedded text). OCR is required to audit this document.",
+            detail=(
+                "PDF appears to be image-only (no embedded text). "
+                "Enable MED_AUDIT_TEXTRACT_ENABLED to OCR and audit these files."
+            ),
         )
 
     # Defaults for now: CTP / LCD L39764 (can be parameterized later)
@@ -540,6 +578,7 @@ async def audit_auto(file: UploadFile = File(...)) -> Dict[str, Any]:
             "product": None,
             "standards": [],
             "audit": audit.dict(),
+            "textract_enabled": settings.textract_enabled,
         }
 
     # wound note
@@ -552,6 +591,7 @@ async def audit_auto(file: UploadFile = File(...)) -> Dict[str, Any]:
         "standards": [{"id": s["id"], "name": s["name"]} for s in standards],
         "audit": audit.dict(),
         "score": audit.completeness_percentage,
+        "textract_enabled": settings.textract_enabled,
     }
 
 
