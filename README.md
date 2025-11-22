@@ -20,6 +20,8 @@ Key endpoints:
 - `POST /medical/audit/face-sheet` – audit a face-sheet PDF
 - `POST /medical/audit/wound-note` – audit a wound-note PDF
 - `POST /medical/audit/auto` – auto-detect document type and audit
+- `POST /vision/motion/detect` – detect human-motion segments in uploaded video
+- `GET /vision/motion/config` – tunable parameters for the motion detector
 
 ## AWS readiness
 
