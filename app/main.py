@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(medicalrouter, prefix="/medical")
+app.include_router(visionrouter, prefix="/vision")
 
 
 @app.get("/health")
