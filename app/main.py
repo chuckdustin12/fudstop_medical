@@ -10,7 +10,6 @@ from mangum import Mangum
 
 from app.settings import settings
 from auditroutes import medicalrouter
-from app.vision_routes import visionrouter
 
 app = FastAPI(title=settings.app_name, version="1.0.0")
 
@@ -23,7 +22,6 @@ app.add_middleware(
 )
 
 app.include_router(medicalrouter, prefix="/medical")
-app.include_router(visionrouter, prefix="/vision")
 
 
 @app.get("/health")

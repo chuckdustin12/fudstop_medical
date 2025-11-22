@@ -22,8 +22,6 @@ Key endpoints:
 - `POST /medical/audit/auto` – auto-detect document type and audit
 - `POST /vision/motion/detect` – detect human-motion segments in uploaded video
 - `GET /vision/motion/config` – tunable parameters for the motion detector
-- `POST /vision/swing/analyze` – analyze golf-swing tempo and posture using pose estimation
-- `GET /vision/swing/config` – swing-analyzer input/output contract
 
 ## AWS readiness
 
