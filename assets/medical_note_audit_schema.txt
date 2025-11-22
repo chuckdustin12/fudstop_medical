@@ -1,0 +1,122 @@
+{
+  "MedicalNoteAuditTool": {
+    "Modules": [
+      {
+        "name": "Medical Note Audit",
+        "workflow": [
+          "Upload Medical Note Documents (single or multiple progress notes)",
+          "Select Product",
+          "Select Standard",
+          "Select Requirements",
+          "Extract Contents of Document (PDF)",
+          "Process and Format Content",
+          "Pass to AI for Compliance Auditing",
+          "Generate Compliance / Non-Compliance Flags",
+          "Generate Recommendations",
+          "Score Compliance (0-100)"
+        ]
+      },
+      {
+        "name": "Face Sheet Extraction",
+        "workflow": [
+          "Extract Data from Document",
+          "Parse Identifiers and Patient Demographics",
+          "Return Structured Output"
+        ]
+      }
+    ],
+
+    "Products": [
+      {
+        "id": "CTP",
+        "name": "Cellular Tissue Product",
+        "description": "Cellular & Tissue-based Products used for DFU/VLU wound treatment.",
+        "standards": [
+          {
+            "id": "CTP-CMS-LCD-L39764",
+            "name": "CMS LCD L39764",
+            "source": "Centers for Medicare & Medicaid Services",
+            "description": "Coverage criteria for Skin Substitute Grafts/CTPs for DFUs & VLUs."
+          },
+          {
+            "id": "CTP-CMS-LCD-L35041",
+            "name": "CMS LCD L35041",
+            "source": "Centers for Medicare & Medicaid Services",
+            "description": "Coverage determination for CTP use in DFUs & VLUs."
+          },
+          {
+            "id": "CTP-CMS-BILLING",
+            "name": "CMS Billing & Coding Article (CTP)",
+            "source": "CMS",
+            "description": "Coding, HCPCS rules, documentation for wound application of CTPs."
+          },
+          {
+            "id": "CTP-FDA-HCTP",
+            "name": "FDA HCT/P Guidance",
+            "source": "Food and Drug Administration",
+            "description": "Regulatory classification for human cellular & tissue-based products."
+          }
+        ]
+      },
+      {
+        "id": "DME",
+        "name": "Durable Medical Equipment",
+        "description": "Durable Medical Equipment, Prosthetics, Orthotics & Supplies.",
+        "standards": [
+          {
+            "id": "DME-CMS-ORDERREQ",
+            "name": "CMS DMEPOS Order Requirements",
+            "source": "CMS",
+            "description": "Documentation and order rules for DME suppliers."
+          },
+          {
+            "id": "DME-OIG-GUIDANCE",
+            "name": "OIG Compliance Program Guidance (DMEPOS)",
+            "source": "Office of Inspector General",
+            "description": "Supplier-side compliance framework."
+          },
+          {
+            "id": "DME-CMS-DOCREQ",
+            "name": "CMS Standard Documentation Requirements",
+            "source": "CMS/MAC",
+            "description": "Required documentation for all DMEPOS claims."
+          },
+          {
+            "id": "DME-CODELISTS",
+            "name": "DME Procedure Code Lists & Coverage Manuals",
+            "source": "CMS / State Manuals",
+            "description": "HCPCS-based coverage and coding rules."
+          }
+        ]
+      }
+    ],
+
+    "ComplianceCategories": [
+      {
+        "id": "WC",
+        "name": "Wound Characteristics and Measurements",
+        "description": "Wound size, depth, duration, and measurement documentation."
+      },
+      {
+        "id": "WCOND",
+        "name": "Wound Condition",
+        "description": "Status of wound bed, infection signs, drainage, appearance."
+      },
+      {
+        "id": "MN",
+        "name": "Medical Necessity",
+        "description": "Evidence supporting clinical need for product or service."
+      },
+      {
+        "id": "APPFUP",
+        "name": "Application and Follow-Up",
+        "description": "Proper application process, intervals, follow-up care, healing evaluation."
+      },
+      {
+        "id": "CODCOMP",
+        "name": "Coding and Compliance",
+        "description": "HCPCS/CPT coding, bundling rules, coverage rules, claim narrative elements."
+      }
+    ]
+  }
+}
